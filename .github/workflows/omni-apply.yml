@@ -16,7 +16,7 @@ jobs:
     env:
       OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
       # Store this secret in GitHub as BASE64 (your UI-generated one already is)
-      OMNI_SERVICE_ACCOUNT_KEY_B64: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY_B64 }}
+      OMNI_SERVICE_ACCOUNT_KEY_B64: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY}}
 
     steps:
       - name: Checkout repo
