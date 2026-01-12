@@ -19,7 +19,7 @@ jobs:
         run: |
           curl -sL https://talos.dev/install-omnictl | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          omnictl version
+          omnictl --version
 
       - name: Apply Omni manifests
         env:
