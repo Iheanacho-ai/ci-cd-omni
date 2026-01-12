@@ -12,18 +12,22 @@ jobs:
   apply:
     runs-on: ubuntu-latest
 
+    # Keep endpoint + key available to all steps
     env:
       OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
-      OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
+      # Store this secret in GitHub as BASE64 (your UI-generated one already is)
+      OMNI_SERVICE_ACCOUNT_KEY_B64: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY_B64 }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Install omnictl
+        shell: bash
         run: |
+          set -euo pipefail
           curl -sL https://talos.dev/install-omnictl | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           omnictl --version
 
       - name: Configure omnictl
@@ -31,23 +35,30 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Fail fast if secrets aren't present
-          test -n "${OMNI_ENDPOINT}" || (echo "OMNI_ENDPOINT is empty" && exit 1)
-          test -n "${OMNI_SERVICE_ACCOUNT_KEY}" || (echo "OMNI_SERVICE_ACCOUNT_KEY is empty" && exit 1)
+          test -n "${OMNI_ENDPOINT:-}" || (echo "OMNI_ENDPOINT is empty" && exit 1)
+          test -n "${OMNI_SERVICE_ACCOUNT_KEY_B64:-}" || (echo "OMNI_SERVICE_ACCOUNT_KEY_B64 is empty" && exit 1)
 
           mkdir -p "$HOME/.talos/omni"
 
-          # Write config and embed the JSON key safely as a YAML block scalar
+          # Decode base64 -> JSON string (what omnictl expects)
+          OMNI_SERVICE_ACCOUNT_KEY="$(printf '%s' "$OMNI_SERVICE_ACCOUNT_KEY_B64" | base64 -d)"
+
+          # Write config (IMPORTANT: currentContext is top-level)
           {
             echo "contexts:"
             echo "  ci:"
             echo "    endpoint: ${OMNI_ENDPOINT}"
             echo "    serviceAccount:"
             echo "      key: |"
-            printf '%s\n' "${OMNI_SERVICE_ACCOUNT_KEY}" | sed 's/^/        /'
+            printf '%s\n' "$OMNI_SERVICE_ACCOUNT_KEY" | sed 's/^/        /'
             echo "currentContext: ci"
           } > "$HOME/.talos/omni/config"
 
+          # Optional: quick sanity check that the file exists
+          test -s "$HOME/.talos/omni/config"
+
       - name: Apply Omni manifests
+        shell: bash
         run: |
+          set -euo pipefail
           omnictl apply -f omni/cluster-template.yaml
