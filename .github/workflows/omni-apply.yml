@@ -11,6 +11,11 @@ on:
 jobs:
   apply:
     runs-on: ubuntu-latest
+
+    env:
+      OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
+      OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_TOKEN }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -22,21 +27,27 @@ jobs:
           omnictl --version
 
       - name: Configure omnictl
+        shell: bash
         run: |
+          set -euo pipefail
+
+          # Fail fast if secrets aren't present
+          test -n "${OMNI_ENDPOINT}" || (echo "OMNI_ENDPOINT is empty" && exit 1)
+          test -n "${OMNI_SERVICE_ACCOUNT_KEY}" || (echo "OMNI_SERVICE_ACCOUNT_KEY is empty" && exit 1)
+
           mkdir -p "$HOME/.talos/omni"
 
-          cat <<EOF > "$HOME/.talos/omni/config"
-          contexts:
-            ci:
-              endpoint: ${OMNI_ENDPOINT}
-              serviceAccount:
-                key: ${OMNI_SERVICE_ACCOUNT_KEY}
-          currentContext: ci
-          EOF
+          # Write config and embed the JSON key safely as a YAML block scalar
+          {
+            echo "contexts:"
+            echo "  ci:"
+            echo "    endpoint: ${OMNI_ENDPOINT}"
+            echo "    serviceAccount:"
+            echo "      key: |"
+            printf '%s\n' "${OMNI_SERVICE_ACCOUNT_KEY}" | sed 's/^/        /'
+            echo "currentContext: ci"
+          } > "$HOME/.talos/omni/config"
 
       - name: Apply Omni manifests
-        env:
-          OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
-          OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_TOKEN }}
         run: |
           omnictl apply -f omni/cluster-template.yaml
