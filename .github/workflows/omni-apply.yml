@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "omni/**"
+      - ".github/workflows/**"
   workflow_dispatch: {}
 
 jobs:
