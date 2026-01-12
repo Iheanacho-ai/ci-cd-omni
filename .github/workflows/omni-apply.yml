@@ -18,17 +18,7 @@ jobs:
         shell: bash
         run: |
           curl -sL https://talos.dev/install-omnictl | sh
-          # handle common install locations
-          if [ -f ./omnictl ]; then
-            sudo install -m 0755 ./omnictl /usr/local/bin/omnictl
-          elif [ -f ./bin/omnictl ]; then
-            sudo install -m 0755 ./bin/omnictl /usr/local/bin/omnictl
-          else
-            echo "omnictl not found after install"
-            ls -la
-            ls -la ./bin || true
-            exit 1
-          fi
+          sudo install -m 0755 "$HOME/.local/bin/omnictl" /usr/local/bin/omnictl
           omnictl version
 
       - name: Apply Omni manifests
