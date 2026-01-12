@@ -16,14 +16,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install omnictl
-        shell: bash
         run: |
           curl -sL https://talos.dev/install-omnictl | sh
-          sudo install -m 0755 "$HOME/.local/bin/omnictl" /usr/local/bin/omnictl
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           omnictl version
 
       - name: Apply Omni manifests
-        shell: bash
         env:
           OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
           OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_TOKEN }}
