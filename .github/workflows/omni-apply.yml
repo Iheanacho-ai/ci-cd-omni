@@ -1,0 +1,40 @@
+name: Apply Omni Manifests
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "omni/**"
+  workflow_dispatch: {}
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install omnictl
+        shell: bash
+        run: |
+          curl -sL https://talos.dev/install-omnictl | sh
+          # handle common install locations
+          if [ -f ./omnictl ]; then
+            sudo install -m 0755 ./omnictl /usr/local/bin/omnictl
+          elif [ -f ./bin/omnictl ]; then
+            sudo install -m 0755 ./bin/omnictl /usr/local/bin/omnictl
+          else
+            echo "omnictl not found after install"
+            ls -la
+            ls -la ./bin || true
+            exit 1
+          fi
+          omnictl version
+
+      - name: Apply Omni manifests
+        shell: bash
+        env:
+          OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          omnictl apply omni/

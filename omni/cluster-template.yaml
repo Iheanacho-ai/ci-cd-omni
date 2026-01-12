@@ -1,0 +1,18 @@
+kind: Cluster
+name: ci-cd
+kubernetes:
+  version: v1.34.1
+talos:
+  version: v1.11.3
+
+---
+kind: ControlPlane
+machineClass:
+  name: controlplane-ci-cd
+  size: 1
+
+---
+kind: Workers
+machineClass:
+  name: worker
+  size: 1
