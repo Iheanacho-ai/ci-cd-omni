@@ -21,6 +21,19 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           omnictl --version
 
+      - name: Configure omnictl
+        run: |
+          mkdir -p "$HOME/.talos/omni"
+
+          cat <<EOF > "$HOME/.talos/omni/config"
+          contexts:
+            ci:
+              endpoint: ${OMNI_ENDPOINT}
+              serviceAccount:
+                key: ${OMNI_SERVICE_ACCOUNT_KEY}
+          currentContext: ci
+          EOF
+
       - name: Apply Omni manifests
         env:
           OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
