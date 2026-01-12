@@ -26,4 +26,4 @@ jobs:
           OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
           OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_TOKEN }}
         run: |
-          omnictl apply -f omni/
+          omnictl apply -f omni/cluster-template.yaml
