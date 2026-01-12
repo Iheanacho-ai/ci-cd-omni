@@ -14,7 +14,7 @@ jobs:
 
     env:
       OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
-      OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_TOKEN }}
+      OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
 
     steps:
       - name: Checkout repo
