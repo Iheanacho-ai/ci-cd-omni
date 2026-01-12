@@ -12,11 +12,9 @@ jobs:
   apply:
     runs-on: ubuntu-latest
 
-    # Keep endpoint + key available to all steps
     env:
       OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
-      # Store this secret in GitHub as BASE64 (your UI-generated one already is)
-      OMNI_SERVICE_ACCOUNT_KEY_B64: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY}}
+      OMNI_SERVICE_ACCOUNT_KEY_B64: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
 
     steps:
       - name: Checkout repo
@@ -35,30 +33,34 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Fail fast if secrets are missing
           test -n "${OMNI_ENDPOINT:-}" || (echo "OMNI_ENDPOINT is empty" && exit 1)
-          test -n "${OMNI_SERVICE_ACCOUNT_KEY_B64:-}" || (echo "OMNI_SERVICE_ACCOUNT_KEY_B64 is empty" && exit 1)
+          test -n "${OMNI_SERVICE_ACCOUNT_KEY_B64:-}" || (echo "OMNI_SERVICE_ACCOUNT_KEY is empty" && exit 1)
 
           mkdir -p "$HOME/.talos/omni"
 
-          # Decode base64 -> JSON string (what omnictl expects)
+          # Decode base64 -> JSON
           OMNI_SERVICE_ACCOUNT_KEY="$(printf '%s' "$OMNI_SERVICE_ACCOUNT_KEY_B64" | base64 -d)"
 
-          # Write config (IMPORTANT: currentContext is top-level)
-          {
-            echo "contexts:"
-            echo "  ci:"
-            echo "    endpoint: ${OMNI_ENDPOINT}"
-            echo "    serviceAccount:"
-            echo "      key: |"
-            printf '%s\n' "$OMNI_SERVICE_ACCOUNT_KEY" | sed 's/^/        /'
-            echo "currentContext: ci"
-          } > "$HOME/.talos/omni/config"
+          CONFIG="$HOME/.talos/omni/config"
+          : > "$CONFIG"
 
-          # Optional: quick sanity check that the file exists
-          test -s "$HOME/.talos/omni/config"
+          echo "contexts:" >> "$CONFIG"
+          echo "  ci:" >> "$CONFIG"
+          echo "    endpoint: ${OMNI_ENDPOINT}" >> "$CONFIG"
+          echo "    serviceAccount:" >> "$CONFIG"
+          echo "      key: |" >> "$CONFIG"
+
+          # indent JSON correctly for YAML block scalar
+          printf '%s\n' "$OMNI_SERVICE_ACCOUNT_KEY" | sed 's/^/        /' >> "$CONFIG"
+
+          echo "currentContext: ci" >> "$CONFIG"
+
+          # sanity check
+          test -s "$CONFIG"
 
       - name: Apply Omni manifests
         shell: bash
         run: |
           set -euo pipefail
-          omnictl apply -f omni/cluster-template.yaml
+          omnictl --context ci apply -f omni/cluster-template.yaml
